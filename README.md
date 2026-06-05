@@ -83,31 +83,6 @@ Formula: `Total = Base + (Distance_km × Rate_per_km)`
 - 📊 Fare breakdown card
 - 📱 Responsive layout
 
----
-
-## 🔄 Alternative Tech Stacks
-
-### Option A: FastAPI + React (More Scalable)
-- **FastAPI** instead of Flask for async support, auto-docs
-- **React + Vite** instead of vanilla JS for component reuse
-- Best if you plan to add user auth, history, or multi-user support
-
-### Option B: Next.js Full Stack (Simplest for deployment)
-- Everything in one project (API routes + frontend)
-- Deploy to Vercel in one click
-- No Python needed; JS-only stack
-
-### Option C: Pure Static (No backend at all)
-- Call OSRM and Nominatim directly from the browser (no CORS issues for these APIs)
-- Host on GitHub Pages / Netlify for free
-- Limitation: can't add custom auth or DB later
-
-### 🏆 Recommendation for production:
-> **FastAPI + React + Mapbox GL JS**
-> - FastAPI handles async, is faster than Flask
-> - React makes the UI more maintainable at scale
-> - Mapbox GL JS renders smoother routes than Leaflet for dense datasets
-> - Cost: Free tier on Mapbox is sufficient for ~50k map loads/month
 
 ---
 
