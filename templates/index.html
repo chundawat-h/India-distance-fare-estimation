@@ -406,6 +406,140 @@
     .toast-msg {
       line-height: 1.4;
     }
+
+    /* ═══════════════════════════════════════════════════════
+       MOBILE RESPONSIVE  — bottom-sheet panel
+       ═══════════════════════════════════════════════════════ */
+
+    /* CSS custom property so JS can sync leaflet/toast position */
+    :root { --panel-h: 52vh; }
+
+    /* ─── Drag handle (hidden on desktop) ─── */
+    .panel-drag-handle {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px 0 2px;
+      cursor: grab;
+      flex-shrink: 0;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .panel-drag-handle .handle-pill {
+      width: 40px;
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.18);
+      transition: background 0.2s;
+    }
+
+    html:not(.dark) .panel-drag-handle .handle-pill {
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .panel-drag-handle:active .handle-pill {
+      background: rgba(249, 115, 22, 0.5);
+    }
+
+    /* ─── Inner scrollable area ─── */
+    .panel-scroll-area {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    @media (max-width: 767px) {
+
+      /* Panel becomes a fixed bottom-sheet */
+      .sidebar-panel {
+        position: fixed !important;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100% !important;
+        height: var(--panel-h);
+        max-height: 92vh;
+        z-index: 500;
+        border-radius: 22px 22px 0 0;
+        border-right: none !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.09);
+        overflow: hidden;
+        transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        flex-shrink: 0;
+      }
+
+      html:not(.dark) .sidebar-panel {
+        border-top-color: rgba(0, 0, 0, 0.09);
+      }
+
+      /* State variants */
+      .sidebar-panel.panel-compact  { height: var(--panel-h); }
+      .sidebar-panel.panel-expanded { height: 92vh; }
+      .sidebar-panel.panel-collapsed { height: 68px; }
+
+      /* Show drag handle on mobile */
+      .panel-drag-handle { display: flex; }
+
+      /* Map fills entire viewport behind panel */
+      .map-main {
+        position: fixed !important;
+        inset: 0;
+        height: 100dvh !important;
+        width: 100vw !important;
+      }
+
+      /* Map overlays: sit above the panel */
+      #clickHint {
+        bottom: calc(var(--panel-h) + 16px);
+        font-size: 11px;
+        padding: 8px 14px;
+      }
+
+      #mapInfoBadge {
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        right: auto;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+
+      /* Leaflet controls above panel */
+      .leaflet-bottom {
+        bottom: calc(var(--panel-h) + 10px) !important;
+      }
+
+      /* Attribution stays readable */
+      .leaflet-control-attribution {
+        font-size: 9px !important;
+      }
+
+      /* Toast stack above panel */
+      #toastContainer {
+        bottom: calc(var(--panel-h) + 12px);
+        left: 12px;
+        right: 12px;
+      }
+
+      .toast { max-width: 100%; }
+
+      /* Tighten header padding on mobile */
+      .mobile-header-px { padding-left: 1rem; padding-right: 1rem; }
+
+      /* Compact empty state */
+      #emptyState {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+      }
+
+      #emptyState .w-16 {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1.25rem;
+        margin-bottom: 0.5rem;
+      }
+    }
   </style>
 </head>
 
@@ -415,11 +549,19 @@
   <div class="flex h-screen overflow-hidden">
 
     <!-- ── SIDEBAR ── -->
-    <aside
-      class="w-[600px] flex-shrink-0 flex flex-col glass-card rounded-none border-r border-white/5 z-10 overflow-y-auto">
+    <aside id="sidePanel"
+      class="sidebar-panel md:relative md:w-[600px] md:flex-shrink-0 md:z-10 flex flex-col glass-card md:rounded-none md:border-r border-white/5 md:overflow-y-auto">
+
+      <!-- Mobile drag handle + tap to toggle -->
+      <div class="panel-drag-handle" id="panelHandle" onclick="toggleMobilePanel()">
+        <div class="handle-pill"></div>
+      </div>
+
+      <!-- Scrollable content area (controls overflow inside the fixed panel on mobile) -->
+      <div class="panel-scroll-area md:contents">
 
       <!-- Header -->
-      <div class="px-6 pt-6 pb-4 border-b border-white/5">
+      <div class="px-4 md:px-6 pt-4 md:pt-6 pb-4 border-b border-white/5">
         <div class="flex items-center justify-between mb-1">
           <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-sm">
@@ -520,12 +662,12 @@
         <div class="grid grid-cols-3 gap-2.5">
           <div class="stat-card rounded-xl p-3.5">
             <p class="text-[10px] text-slate-500 font-500 uppercase tracking-wider mb-1.5">Distance</p>
-            <p id="statDist" class="text-xl font-700 text-grey-500 leading-none">—</p>
+            <p id="statDist" class="text-xl font-700 text-gray-800 dark:text-white leading-none">—</p>
             <p class="text-[10px] text-slate-500 mt-1">km</p>
           </div>
           <div class="stat-card rounded-xl p-3.5">
             <p class="text-[10px] text-slate-500 font-500 uppercase tracking-wider mb-1.5">Duration</p>
-            <p id="statTime" class="text-xl font-700 text-grey-500 leading-none">—</p>
+            <p id="statTime" class="text-xl font-700 text-gray-800 dark:text-white leading-none">—</p>
             <p class="text-[10px] text-slate-500 mt-1">by road</p>
           </div>
           <div class="stat-card rounded-xl p-3.5">
@@ -597,10 +739,11 @@
           origin and destination</p>
       </div>
 
+      </div><!-- /panel-scroll-area -->
     </aside>
 
     <!-- ── MAP AREA ── -->
-    <main class="flex-1 relative">
+    <main class="map-main flex-1 relative">
       <div id="map" class="w-full h-full"></div>
 
       <!-- Map overlay - loading spinner -->

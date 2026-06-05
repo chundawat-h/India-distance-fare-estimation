@@ -18,6 +18,44 @@ const FALLBACK_CONFIG = {
 };
 
 // ═══════════════════════════════════════════════════════
+// MOBILE PANEL STATE
+// ═══════════════════════════════════════════════════════
+const PANEL_HEIGHTS = { compact: '52vh', expanded: '92vh', collapsed: '68px' };
+let mobilePanelState = 'compact';
+
+function isMobile() {
+    return window.innerWidth < 768;
+}
+
+/**
+ * Sets the mobile bottom-sheet panel to a given state.
+ * Also syncs the CSS custom property so leaflet controls,
+ * toasts, and the click-hint stay correctly positioned.
+ * @param {'compact'|'expanded'|'collapsed'} state
+ */
+function setPanelState(state) {
+    if (!isMobile()) return;
+    mobilePanelState = state;
+
+    const panel = document.getElementById('sidePanel');
+    const h = PANEL_HEIGHTS[state] || PANEL_HEIGHTS.compact;
+
+    // Toggle state classes
+    panel.classList.remove('panel-compact', 'panel-expanded', 'panel-collapsed');
+    panel.classList.add(`panel-${state}`);
+
+    // Sync CSS custom property — drives leaflet controls, toasts, click-hint
+    document.documentElement.style.setProperty('--panel-h', h);
+}
+
+/** Tap-on-drag-handle: cycle collapsed → compact → expanded → compact */
+function toggleMobilePanel() {
+    if (mobilePanelState === 'collapsed') setPanelState('compact');
+    else if (mobilePanelState === 'compact')  setPanelState('expanded');
+    else                                       setPanelState('compact');
+}
+
+// ═══════════════════════════════════════════════════════
 // CONFIG LOADER  — fetches fares.json via /api/config
 // so frontend never needs hardcoded fare/speed values
 // ═══════════════════════════════════════════════════════
@@ -185,6 +223,7 @@ function clearLocation(type) {
     document.getElementById('emptyState').classList.remove('hidden');
     document.getElementById('mapInfoBadge').classList.add('hidden');
     updateClickHint();
+    setPanelState('compact');  // reset panel height on mobile
 }
 
 function swapLocations() {
@@ -367,6 +406,8 @@ function displayResults(data) {
 
     document.getElementById('resultsSection').classList.remove('hidden');
     document.getElementById('emptyState').classList.add('hidden');
+
+    setPanelState('expanded');  // auto-expand panel on mobile to show results
 }
 
 function formatDuration(totalMin) {
