@@ -30,8 +30,8 @@ india-fare-dashboard/
 ├── app.py                  # Flask backend (routes, geocoding, OSRM API)
 ├── requirements.txt        # Python dependencies
 ├── templates/
-│   └── index.html          # Full frontend (Tailwind + Leaflet + JS)
-└── static/                 # (Optional) for custom CSS/JS files
+│   └── index.html          # Full frontend (Tailwind + Leaflet)
+└── static/                 # for custom CSS/JS files
 ```
 
 ---
