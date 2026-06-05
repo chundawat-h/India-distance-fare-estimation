@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>India Distance & Fare Dashboard</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50:  '#fff7ed',
+              100: '#ffedd5',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              900: '#431407',
+            },
+            surface: {
+              900: '#0d0f12',
+              800: '#13161b',
+              700: '#1a1e25',
+              600: '#212630',
+              500: '#2a3040',
+              400: '#363d50',
+              300: '#4a5268',
+            }
+          },
+          animation: {
+            'slide-up': 'slideUp 0.4s cubic-bezier(0.16,1,0.3,1)',
+            'fade-in': 'fadeIn 0.3s ease',
+            'pulse-dot': 'pulseDot 2s infinite',
+          },
+          keyframes: {
+            slideUp: { '0%': { opacity: 0, transform: 'translateY(20px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            fadeIn:  { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+            pulseDot: { '0%,100%': { transform: 'scale(1)', opacity: 1 }, '50%': { transform: 'scale(1.5)', opacity: 0.6 } },
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+
+  <style>
+    /* ─── Base ─── */
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { font-family: 'Outfit', sans-serif; }
+
+    /* ─── Map ─── */
+    #map { width: 100%; height: 100%; border-radius: 0; }
+    .leaflet-container { background: #0d0f12 !important; }
+    .leaflet-tile { filter: brightness(0.55) saturate(0.6) hue-rotate(185deg); }
+    html:not(.dark) .leaflet-tile { filter: none; }
+
+    /* ─── Scrollbar ─── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #363d50; border-radius: 4px; }
+
+    /* ─── Autocomplete dropdown ─── */
+    .autocomplete-list {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      z-index: 9999; border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+      background: #1a1e25;
+      animation: slideUp 0.2s cubic-bezier(0.16,1,0.3,1);
+    }
+    html:not(.dark) .autocomplete-list {
+      background: #fff;
+      border-color: rgba(0,0,0,0.1);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+    }
+    .autocomplete-item {
+      padding: 11px 16px; cursor: pointer; font-size: 14px;
+      color: #c8d0e0; border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.15s;
+    }
+    html:not(.dark) .autocomplete-item { color: #333; border-color: #f0f0f0; }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover, .autocomplete-item.active { background: rgba(249,115,22,0.12); color: #fb923c; }
+    html:not(.dark) .autocomplete-item:hover { background: #fff7ed; color: #ea580c; }
+
+    /* ─── Card glass effect ─── */
+    .glass-card {
+      background: rgba(19, 22, 27, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    html:not(.dark) .glass-card {
+      background: rgba(255,255,255,0.97);
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    /* ─── Input fields ─── */
+    .location-input {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: #e2e8f0;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .location-input:focus {
+      background: rgba(249,115,22,0.06);
+      border-color: rgba(249,115,22,0.4);
+      outline: none;
+    }
+    .location-input::placeholder { color: #4a5268; }
+    html:not(.dark) .location-input {
+      background: #f8f9fc;
+      border-color: #e2e8f0;
+      color: #1a202c;
+    }
+    html:not(.dark) .location-input:focus {
+      background: #fff7ed;
+      border-color: #fb923c;
+    }
+    html:not(.dark) .location-input::placeholder { color: #a0aec0; }
+
+    /* ─── Stat cards ─── */
+    .stat-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .stat-card:hover { border-color: rgba(249,115,22,0.3); transform: translateY(-2px); }
+    html:not(.dark) .stat-card { background: #f8fafc; border-color: #e9edf4; }
+    html:not(.dark) .stat-card:hover { border-color: #fb923c; }
+
+    /* ─── Fare mode tabs ─── */
+    .mode-tab {
+      border: 1px solid rgba(255,255,255,0.07);
+      background: rgba(255,255,255,0.04);
+      color: #6b7a99;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .mode-tab:hover { border-color: rgba(249,115,22,0.3); color: #e2e8f0; }
+    .mode-tab.active {
+      border-color: rgba(249,115,22,0.5);
+      background: rgba(249,115,22,0.12);
+      color: #fb923c;
+    }
+    html:not(.dark) .mode-tab { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
+    html:not(.dark) .mode-tab:hover { color: #1a202c; }
+    html:not(.dark) .mode-tab.active { background: #fff7ed; border-color: #fb923c; color: #ea580c; }
+
+    /* ─── Loader ─── */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(249,115,22,0.2);
+      border-top-color: #fb923c;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── Leaflet popup override ─── */
+    .leaflet-popup-content-wrapper {
+      background: #1a1e25 !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      color: #e2e8f0 !important;
+      border-radius: 10px !important;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+    }
+    .leaflet-popup-tip { background: #1a1e25 !important; }
+    html:not(.dark) .leaflet-popup-content-wrapper {
+      background: #fff !important;
+      color: #1a202c !important;
+      border-color: rgba(0,0,0,0.1) !important;
+    }
+    html:not(.dark) .leaflet-popup-tip { background: #fff !important; }
+
+    /* ─── Route line pulse ─── */
+    .route-drawn .leaflet-interactive { animation: none; }
+
+    /* ─── Light mode text overrides ─── */
+    html:not(.dark) body { background: #f0f4f8; }
+    html:not(.dark) .text-slate-400 { color: #64748b; }
+    html:not(.dark) .text-slate-300 { color: #475569; }
+    html:not(.dark) .text-slate-200 { color: #334155; }
+    html:not(.dark) .text-slate-500 { color: #94a3b8; }
+  </style>
+</head>
+
+<body class="bg-surface-900 dark:bg-surface-900 text-slate-200 transition-colors duration-300">
+
+  <!-- ═══════════════════════════ LAYOUT ═══════════════════════════ -->
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="w-[380px] flex-shrink-0 flex flex-col glass-card rounded-none border-r border-white/5 z-10 overflow-y-auto">
+
+      <!-- Header -->
+      <div class="px-6 pt-6 pb-4 border-b border-white/5">
+        <div class="flex items-center justify-between mb-1">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center text-white font-bold text-sm">🗺</div>
+            <div>
+              <h1 class="text-[15px] font-600 text-white leading-tight">India Travel Dashboard</h1>
+              <p class="text-[11px] text-slate-500 mt-0.5">Distance · Fare · Time Estimator</p>
+            </div>
+          </div>
+
+          <!-- Dark mode toggle -->
+          <button id="themeToggle" title="Toggle theme"
+            class="w-8 h-8 rounded-lg border border-white/10 flex items-center justify-center text-slate-400 hover:text-white hover:border-brand-500/50 transition-all text-sm">
+            <span id="themeIcon">☀️</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search Panel -->
+      <div class="px-5 py-5 space-y-4">
+
+        <!-- Source -->
+        <div class="relative">
+          <label class="block text-[11px] font-500 text-slate-500 uppercase tracking-wider mb-1.5">From</label>
+          <div class="relative flex items-center gap-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-green-400 flex-shrink-0 animate-pulse-dot ml-1"></div>
+            <div class="relative flex-1">
+              <input id="srcInput" type="text" placeholder="Search source city or state…"
+                class="location-input w-full rounded-xl px-4 py-3 text-sm font-400"
+                autocomplete="off" />
+              <div id="srcList" class="autocomplete-list hidden"></div>
+            </div>
+            <button id="srcClear" onclick="clearLocation('src')" class="text-slate-500 hover:text-red-400 transition-colors text-lg leading-none hidden">×</button>
+          </div>
+          <div id="srcChip" class="hidden mt-2 ml-5">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+              <span id="srcChipText"></span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Swap button -->
+        <div class="flex items-center gap-3">
+          <div class="flex-1 h-px bg-white/5"></div>
+          <button id="swapBtn" onclick="swapLocations()"
+            class="w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-slate-400 hover:border-brand-500/50 hover:text-brand-400 transition-all text-base">
+            ⇅
+          </button>
+          <div class="flex-1 h-px bg-white/5"></div>
+        </div>
+
+        <!-- Destination -->
+        <div class="relative">
+          <label class="block text-[11px] font-500 text-slate-500 uppercase tracking-wider mb-1.5">To</label>
+          <div class="relative flex items-center gap-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-red-400 flex-shrink-0 ml-1"></div>
+            <div class="relative flex-1">
+              <input id="dstInput" type="text" placeholder="Search destination city or state…"
+                class="location-input w-full rounded-xl px-4 py-3 text-sm font-400"
+                autocomplete="off" />
+              <div id="dstList" class="autocomplete-list hidden"></div>
+            </div>
+            <button id="dstClear" onclick="clearLocation('dst')" class="text-slate-500 hover:text-red-400 transition-colors text-lg leading-none hidden">×</button>
+          </div>
+          <div id="dstChip" class="hidden mt-2 ml-5">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+              <span id="dstChipText"></span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Calculate Button -->
+        <button id="calcBtn" onclick="calculateRoute()"
+          class="w-full py-3.5 rounded-xl bg-brand-500 hover:bg-brand-600 active:scale-[0.98] text-white font-600 text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20 mt-2">
+          <span id="calcBtnIcon">🔍</span>
+          <span id="calcBtnText">Calculate Route</span>
+        </button>
+
+        <!-- Map hint -->
+        <p class="text-center text-[11px] text-slate-600">Or click directly on the map to set points</p>
+      </div>
+
+      <!-- ── RESULTS SECTION ── -->
+      <div id="resultsSection" class="hidden px-5 pb-6 space-y-4 animate-slide-up">
+        <div class="h-px bg-white/5 mx-0 -mx-0"></div>
+
+        <!-- Route summary label -->
+        <div class="flex items-center gap-2">
+          <div class="w-1.5 h-1.5 rounded-full bg-brand-400"></div>
+          <span class="text-[11px] font-500 text-slate-500 uppercase tracking-wider">Route Summary</span>
+        </div>
+
+        <!-- Stat cards grid -->
+        <div class="grid grid-cols-3 gap-2.5">
+          <div class="stat-card rounded-xl p-3.5">
+            <p class="text-[10px] text-slate-500 font-500 uppercase tracking-wider mb-1.5">Distance</p>
+            <p id="statDist" class="text-xl font-700 text-white leading-none">—</p>
+            <p class="text-[10px] text-slate-500 mt-1">km</p>
+          </div>
+          <div class="stat-card rounded-xl p-3.5">
+            <p class="text-[10px] text-slate-500 font-500 uppercase tracking-wider mb-1.5">Duration</p>
+            <p id="statTime" class="text-xl font-700 text-white leading-none">—</p>
+            <p class="text-[10px] text-slate-500 mt-1">by road</p>
+          </div>
+          <div class="stat-card rounded-xl p-3.5">
+            <p class="text-[10px] text-slate-500 font-500 uppercase tracking-wider mb-1.5">Est. Fare</p>
+            <p id="statFare" class="text-xl font-700 text-brand-400 leading-none">—</p>
+            <p class="text-[10px] text-slate-500 mt-1" id="statFareMode">car</p>
+          </div>
+        </div>
+
+        <!-- Travel mode tabs -->
+        <div>
+          <p class="text-[11px] font-500 text-slate-500 uppercase tracking-wider mb-2.5">Travel Mode</p>
+          <div class="grid grid-cols-2 gap-2" id="modeTabs"></div>
+        </div>
+
+        <!-- Fare breakdown -->
+        <div class="stat-card rounded-xl p-4">
+          <div class="flex items-center justify-between mb-3">
+            <p class="text-[11px] font-500 text-slate-500 uppercase tracking-wider">Fare Breakdown</p>
+            <span id="selectedModeLabel" class="text-xs text-brand-400 font-500"></span>
+          </div>
+          <div id="fareBreakdown" class="space-y-2 text-sm">
+            <div class="flex justify-between text-slate-400">
+              <span>Base Fare</span><span id="breakBase" class="font-mono">—</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span>Per km rate</span><span id="breakRate" class="font-mono">—</span>
+            </div>
+            <div class="flex justify-between text-slate-400">
+              <span id="breakDistLabel">Distance</span><span id="breakDist" class="font-mono">—</span>
+            </div>
+            <div class="h-px bg-white/5 my-1"></div>
+            <div class="flex justify-between text-white font-600">
+              <span>Total Estimate</span><span id="breakTotal" class="text-brand-400 font-mono">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Route path display -->
+        <div class="stat-card rounded-xl p-4">
+          <p class="text-[11px] font-500 text-slate-500 uppercase tracking-wider mb-3">Route</p>
+          <div class="flex items-start gap-3">
+            <div class="flex flex-col items-center mt-1">
+              <div class="w-2 h-2 rounded-full bg-green-400"></div>
+              <div class="w-px h-8 bg-white/10 my-1"></div>
+              <div class="w-2 h-2 rounded-full bg-red-400"></div>
+            </div>
+            <div class="flex flex-col gap-5 flex-1">
+              <p id="routeSrc" class="text-sm text-slate-200 leading-tight">—</p>
+              <p id="routeDst" class="text-sm text-slate-200 leading-tight">—</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <p class="text-[10px] text-slate-600 text-center leading-relaxed">
+          ℹ Fares are estimates based on fixed rates. Actual fares may vary based on traffic, tolls, and operator pricing.
+        </p>
+      </div>
+
+      <!-- Empty state -->
+      <div id="emptyState" class="flex-1 flex flex-col items-center justify-center px-6 pb-8 text-center">
+        <div class="w-16 h-16 rounded-2xl bg-brand-500/10 border border-brand-500/20 flex items-center justify-center text-3xl mb-4">🇮🇳</div>
+        <p class="text-sm font-500 text-slate-400 mb-1">Select Two Locations</p>
+        <p class="text-xs text-slate-600 leading-relaxed">Search for cities, states or click on the map to select your origin and destination</p>
+      </div>
+
+    </aside>
+
+    <!-- ── MAP AREA ── -->
+    <main class="flex-1 relative">
+      <div id="map" class="w-full h-full"></div>
+
+      <!-- Map overlay - loading spinner -->
+      <div id="mapLoader" class="hidden absolute inset-0 flex items-center justify-center bg-black/20 backdrop-blur-sm z-[400]">
+        <div class="glass-card rounded-2xl px-6 py-4 flex items-center gap-3">
+          <div class="spinner"></div>
+          <span class="text-sm text-slate-300 font-500">Calculating route…</span>
+        </div>
+      </div>
+
+      <!-- Top-right info badge -->
+      <div id="mapInfoBadge" class="hidden absolute top-4 right-4 z-[400] glass-card rounded-xl px-4 py-2.5 flex items-center gap-3 animate-fade-in">
+        <div class="text-xs text-slate-400 font-500">
+          <span id="badgeSrc" class="text-green-400">—</span>
+          <span class="text-slate-600 mx-1.5">→</span>
+          <span id="badgeDst" class="text-red-400">—</span>
+        </div>
+        <div class="h-3 w-px bg-white/10"></div>
+        <div class="text-xs font-600 text-brand-400" id="badgeDist">—</div>
+      </div>
+
+      <!-- Click instruction badge -->
+      <div id="clickHint" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-[400] glass-card rounded-full px-4 py-2 text-xs text-slate-400 flex items-center gap-2 animate-fade-in">
+        <span>📍</span> Click map to set <span id="clickHintTarget" class="text-brand-400 font-500">source</span>
+      </div>
+    </main>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
