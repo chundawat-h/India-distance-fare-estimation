@@ -1,5 +1,3 @@
-# India-distance-fare-estimation
-
 # 🗺 India Distance & Fare Dashboard
 
 A clean, dark-mode travel estimation dashboard for Indian cities using OpenStreetMap + OSRM routing.
