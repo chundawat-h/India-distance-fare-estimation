@@ -3,3 +3,4 @@ requests
 flask-caching
 flask-limiter
 pydantic
+gunicorn

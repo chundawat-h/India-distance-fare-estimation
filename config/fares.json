@@ -1,6 +1,30 @@
 {
-  "car":   { "base": 40, "per_km": 8,   "label": "Car / Taxi",     "icon": "\ud83d\ude97", "speed_factor": 1.0  },
-  "bus":   { "base": 15, "per_km": 2.5, "label": "State Bus",      "icon": "\ud83d\ude8c", "speed_factor": 1.5  },
-  "bike":  { "base": 20, "per_km": 3,   "label": "Bike / Scooter", "icon": "\ud83d\udef5", "speed_factor": 1.25 },
-  "train": { "base": 30, "per_km": 2,   "label": "Express Train",  "icon": "\ud83d\ude86", "speed_factor": 0.55 }
+  "car": {
+    "base": 40,
+    "per_km": 8,
+    "label": "Car / Taxi",
+    "icon": "🚗",
+    "speed_factor": 1.0
+  },
+  "bus": {
+    "base": 15,
+    "per_km": 2.5,
+    "label": "State Bus",
+    "icon": "🚌",
+    "speed_factor": 1.5
+  },
+  "bike": {
+    "base": 20,
+    "per_km": 3,
+    "label": "Bike / Scooter",
+    "icon": "🏍️",
+    "speed_factor": 1.25
+  },
+  "train": {
+    "base": 30,
+    "per_km": 2,
+    "label": "Express Train",
+    "icon": "🚂",
+    "speed_factor": 0.55
+  }
 }
